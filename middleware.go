@@ -7,7 +7,7 @@ import (
 )
 
 // hitMetric is a middleware to count the number of requests for each endpoint
-func hitMetric(next http.Handler) http.Handler {
+func HitMetric(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Count the request (method and endpoint as labels)
 		RequestCounter.WithLabelValues(r.Method, r.URL.Path).Inc()
@@ -18,7 +18,7 @@ func hitMetric(next http.Handler) http.Handler {
 }
 
 // responseMetric is a middleware to track the response time for each endpoint
-func responseMetric(next http.Handler) http.Handler {
+func ResponseMetric(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Record the start time for measuring response duration
 		start := time.Now()
