@@ -3,17 +3,22 @@ package prommonitoring
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 )
 
-// hitMetric is a middleware to count the number of requests for each endpoint
+// HitMetric is a middleware to count the number of requests for each endpoint, method, and status code
 func HitMetric(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Count the request (method and endpoint as labels)
-		RequestCounter.WithLabelValues(r.Method, r.URL.Path).Inc()
+		// Wrap the ResponseWriter to capture the status code
+		ww := &statusCapturingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
 		// Call the next handler in the chain
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(ww, r)
+
+		// Count the request (endpoint, and status code as labels)
+		statusCode := strconv.Itoa(ww.statusCode)
+		RequestCounter.WithLabelValues(r.URL.Path, statusCode).Inc()
 	})
 }
 
@@ -24,7 +29,7 @@ func ResponseMetric(next http.Handler) http.Handler {
 		start := time.Now()
 
 		// Create a response writer to capture status code
-		rec := &statusCodeResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		rec := &statusCapturingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
 		// Call the actual handler
 		next.ServeHTTP(rec, r)
@@ -35,13 +40,13 @@ func ResponseMetric(next http.Handler) http.Handler {
 	})
 }
 
-// statusCodeResponseWriter wraps the http.ResponseWriter to capture the status code
-type statusCodeResponseWriter struct {
+// Custom ResponseWriter to capture the status code
+type statusCapturingResponseWriter struct {
 	http.ResponseWriter
 	statusCode int
 }
 
-func (w *statusCodeResponseWriter) WriteHeader(statusCode int) {
-	w.statusCode = statusCode
-	w.ResponseWriter.WriteHeader(statusCode)
+func (rw *statusCapturingResponseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }

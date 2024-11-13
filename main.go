@@ -15,7 +15,7 @@ var (
 			Name: "http_requests_total",
 			Help: "Total number of HTTP requests",
 		},
-		[]string{"method", "endpoint"},
+		[]string{"endpoint", "status_code"},
 	)
 
 	// Define a histogram metric for tracking response time
